@@ -1,0 +1,8 @@
+.knob {
+  position: absolute;
+  width: 94px;
+  height: 93px;
+  top: 100px;
+  background-image: url(https://raw.githubusercontent.com/oscicen/oscicen.github.io/master/img/knob.png);
+  z-index: 1;
+}
