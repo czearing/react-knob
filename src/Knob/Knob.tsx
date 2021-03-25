@@ -4,18 +4,19 @@ import "./styles.css";
 
 export const Knob = (props) => {
   const elementRef = React.useRef();
-  const [value, setValue] = React.useState(0);
-  const [angle, setAngle] = React.useState(props.initialAngle || 220);
 
   const {
     className,
     minAngle = 0,
     maxAngle = 360,
-    initialAngle = 220,
+    initialAngle = 0,
     min = 0,
     max = 100,
     step = 10
   } = props;
+
+  const [value, setValue] = React.useState(0);
+  const [angle, setAngle] = React.useState(initialAngle);
 
   const internalState = useConst(() => ({
     knobX: 0,
@@ -26,48 +27,65 @@ export const Knob = (props) => {
   /**
    * Clamps the input if it exceeds a specified min or max value.
    *
-   * @param {*} value
-   * @param {*} min
-   * @param {*} max
+   * @param value the value to clamp
+   * @param min the minimum value
+   * @param max the maximum value
    */
   const clamp = (value, min, max) => {
     return Math.min(Math.max(value, 0), max - min);
   };
 
-  const onMouseMove = React.useCallback(
-    (ev) => {
-      let percent = 0;
+  /**
+   * Calculates the angle of the mouse's position
+   * relative to this knob component.
+   *
+   * @param mouseX the mouses x coordinate
+   * @param mouseY the mouses y coordinate
+   */
+  const calculateMouseAngle = React.useCallback(
+    (mouseX: number, mouseY: number) => {
       let deg =
         (Math.atan2(
-          internalState.knobY - ev.clientY,
-          internalState.knobX - ev.clientX
+          internalState.knobY - mouseY,
+          internalState.knobX - mouseX
         ) *
           180) /
           Math.PI -
         90;
 
       if (deg < 0) {
-        deg = 360 + deg;
+        deg += 360;
       }
 
-      if (deg <= maxAngle) {
-        percent = Math.max(Math.min(1, deg / maxAngle), 0);
-      } else {
-        percent = +(deg - maxAngle < (360 - maxAngle) / 2);
-      }
+      return deg;
+    },
+    [internalState.knobX, internalState.knobY]
+  );
+
+  /**
+   * Calculates the total percentage of how much the knob is
+   * filled, given it's degrees.
+   *
+   * @param degrees the knobs degrees
+   */
+  const calculateKnobPercent = React.useCallback(
+    (degrees) => {
+      return degrees <= maxAngle
+        ? Math.max(Math.min(1, degrees / maxAngle), 0)
+        : +(degrees - maxAngle < (360 - maxAngle) / 2);
+    },
+    [maxAngle]
+  );
+
+  const onMouseMove = React.useCallback(
+    (ev) => {
+      let deg = calculateMouseAngle(ev.clientX, ev.clientY);
+      let percent = calculateKnobPercent(deg);
 
       setAngle(deg);
       setValue((Math.floor(min + max * percent) / step) * step);
     },
-    [
-      step,
-      initialAngle,
-      internalState.knobX,
-      internalState.knobY,
-      max,
-      min,
-      maxAngle
-    ]
+    [calculateMouseAngle, calculateKnobPercent, step, max, min]
   );
 
   const onMouseUp = React.useCallback(
