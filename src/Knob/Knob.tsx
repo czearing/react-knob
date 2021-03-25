@@ -1,6 +1,9 @@
 import React from "react";
 import { useConst } from "@fluentui/react-hooks";
+import { clamp } from "./utilities";
 import "./styles.css";
+
+/*eslint-disable @typescript-eslint/no-unused-expressions */
 
 export const Knob = (props) => {
   const elementRef = React.useRef();
@@ -8,8 +11,8 @@ export const Knob = (props) => {
   const {
     className,
     minAngle = 0,
-    maxAngle = 360,
-    initialAngle = 0,
+    maxAngle = 270,
+    initialAngle = 90,
     min = 0,
     max = 100,
     step = 10
@@ -23,17 +26,6 @@ export const Knob = (props) => {
     knobY: 0,
     radius: 0
   }));
-
-  /**
-   * Clamps the input if it exceeds a specified min or max value.
-   *
-   * @param value the value to clamp
-   * @param min the minimum value
-   * @param max the maximum value
-   */
-  const clamp = (value, min, max) => {
-    return Math.min(Math.max(value, 0), max - min);
-  };
 
   /**
    * Calculates the angle of the mouse's position
@@ -57,7 +49,7 @@ export const Knob = (props) => {
         deg += 360;
       }
 
-      return deg;
+      return deg % 360;
     },
     [internalState.knobX, internalState.knobY]
   );
@@ -80,12 +72,23 @@ export const Knob = (props) => {
   const onMouseMove = React.useCallback(
     (ev) => {
       let deg = calculateMouseAngle(ev.clientX, ev.clientY);
-      let percent = calculateKnobPercent(deg);
+      let percent = calculateKnobPercent(Math.abs(deg - initialAngle));
 
-      setAngle(deg);
-      setValue((Math.floor(min + max * percent) / step) * step);
+      if (clamp(deg, minAngle, maxAngle)) {
+        setAngle(deg);
+        setValue((Math.floor(min + max * percent) / step) * step);
+      }
     },
-    [calculateMouseAngle, calculateKnobPercent, step, max, min]
+    [
+      calculateMouseAngle,
+      calculateKnobPercent,
+      initialAngle,
+      step,
+      max,
+      min,
+      maxAngle,
+      minAngle
+    ]
   );
 
   const onMouseUp = React.useCallback(
