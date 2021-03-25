@@ -5,9 +5,17 @@ import "./styles.css";
 export const Knob = (props) => {
   const elementRef = React.useRef();
   const [value, setValue] = React.useState(0);
-  const [angle, setAngle] = React.useState(0);
+  const [angle, setAngle] = React.useState(props.initialAngle || 220);
 
-  const { className, min = 0, max = 100, ticks = 10 } = props;
+  const {
+    className,
+    minAngle = 0,
+    maxAngle = 360,
+    initialAngle = 220,
+    min = 0,
+    max = 100,
+    step = 10
+  } = props;
 
   const internalState = useConst(() => ({
     knobX: 0,
@@ -28,7 +36,8 @@ export const Knob = (props) => {
 
   const onMouseMove = React.useCallback(
     (ev) => {
-      let angle =
+      let percent = 0;
+      let deg =
         (Math.atan2(
           internalState.knobY - ev.clientY,
           internalState.knobX - ev.clientX
@@ -37,12 +46,28 @@ export const Knob = (props) => {
           Math.PI -
         90;
 
-      // if (clamp(angle, min, max)) {
-      setAngle(angle);
-      setValue(Math.floor(angle / ticks));
-      // }
+      if (deg < 0) {
+        deg = 360 + deg;
+      }
+
+      if (deg <= maxAngle) {
+        percent = Math.max(Math.min(1, deg / maxAngle), 0);
+      } else {
+        percent = +(deg - maxAngle < (360 - maxAngle) / 2);
+      }
+
+      setAngle(deg);
+      setValue((Math.floor(min + max * percent) / step) * step);
     },
-    [internalState.knobX, internalState.knobY]
+    [
+      step,
+      initialAngle,
+      internalState.knobX,
+      internalState.knobY,
+      max,
+      min,
+      maxAngle
+    ]
   );
 
   const onMouseUp = React.useCallback(
